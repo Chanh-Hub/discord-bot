@@ -321,6 +321,101 @@ client.on("guildMemberRemove", async (member) => {
         logChannel.send({ embeds: [embed] });
     }
 });
+client.login(process.env.TOKEN);
+client.on("guildMemberUpdate", async (oldMember, newMember) => {
+
+    if (oldMember.nickname === newMember.nickname) return;
+
+    const logChannel = client.channels.cache.get(LOG_CHANNEL_ID);
+    if (!logChannel) return;
+
+    const embed = new EmbedBuilder()
+        .setAuthor({
+            name: newMember.user.username,
+            iconURL: newMember.user.displayAvatarURL({ dynamic: true })
+        })
+        .setTitle("📝 Biệt danh được chỉnh sửa")
+        .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
+        .addFields(
+            {
+                name: "👤 Thành viên",
+                value: `${newMember.user}`,
+                inline: false
+            },
+            {
+                name: "📌 Biệt danh cũ",
+                value: oldMember.nickname || "Không có",
+                inline: true
+            },
+            {
+                name: "📌 Biệt danh mới",
+                value: newMember.nickname || "Không có",
+                inline: true
+            },
+            {
+                name: "🆔 ID",
+                value: newMember.user.id,
+                inline: false
+            }
+        )
+        .setTimestamp();
+
+    logChannel.send({ embeds: [embed] });
+});
+client.on("voiceStateUpdate", async (oldState, newState) => {
+
+    if (oldState.channel && !newState.channel) {
+
+        setTimeout(async () => {
+
+            try {
+
+                const fetchedLogs = await oldState.guild.fetchAuditLogs({
+                    limit: 1,
+                    type: AuditLogEvent.MemberDisconnect
+                });
+
+                const disconnectLog = fetchedLogs.entries.first();
+
+                if (!disconnectLog) return;
+
+                const { executor, target } = disconnectLog;
+
+                if (target.id !== oldState.id) return;
+
+                const logChannel = client.channels.cache.get(LOG_CHANNEL_ID);
+                if (!logChannel) return;
+
+                const embed = new EmbedBuilder()
+                    .setTitle("🔨 Thành viên bị ngắt kết nối Voice")
+                    .setThumbnail(oldState.member.user.displayAvatarURL({ dynamic: true }))
+                    .addFields(
+                        {
+                            name: "👤 Thành viên",
+                            value: `${oldState.member}`,
+                            inline: true
+                        },
+                        {
+                            name: "🛡️ Người thực hiện",
+                            value: `<@${executor.id}>`,
+                            inline: true
+                        },
+                        {
+                            name: "🎤 Kênh",
+                            value: oldState.channel.name,
+                            inline: false
+                        }
+                    )
+                    .setTimestamp();
+
+                logChannel.send({ embeds: [embed] });
+
+            } catch (err) {}
+        }, 1000);
+
+    }
+
+});
 
 
 
