@@ -318,6 +318,6 @@ client.on("guildMemberRemove", async (member) => {
             )
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        .....logChannel.send({ embeds: [embed] });
     }
 });
